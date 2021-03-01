@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    
+    <div>
+        <div>
+            <h1 j-name="hello.kk[2].g" j-ref="intro" j-value="this.innerHTML"> Hello </h1>
+            <p j-name="hello.kk[3].g" j-value="this.innerHTML">2</p>
+        </div>
+    </div>
+
+    <!-- Javascript -->
+    <script>
+        const Jelson = {
+            json: {},
+            $refs: {},
+
+            start: function() {
+                this.discoverElements( el => this.buildJSON(el))
+            },
+
+            discoverElements: function(callback) {
+                //register ref-components
+                const refEls = document.querySelectorAll('[j-ref]');
+                refEls.forEach(el => this.$refs[el.getAttribute("j-ref")] = el)
+
+
+                const rootEls = document.querySelectorAll('[j-name]');
+                
+                rootEls.forEach(el => callback(el))
+            },
+
+            buildJSON: function(el) {
+                const path = el.getAttribute('j-name')
+                                .split(/[.\[]/g)
+                                ;
+
+                const valueExpression = el.getAttribute('j-value');
+                
+                const value = this.evaluateExpression(valueExpression, el)
+                
+                this.setDeep(this.json, path, value, true)
+            },
+
+            getJsonProp: function(path) {
+                
+            },
+
+            setDeep: function(obj, path, value) {
+                console.log(path)
+                path.reduce((a, b, level) => {
+                    const arr = b.includes("]") ? true : false
+                    let arrEmpty;
+                    if (arr) {
+                        arrEmpty = b.length === 1;
+                        b = b.replace(/^\[|]/g, "")
+                    }
+
+                    if (typeof a[b] === "undefined"){
+                            a[b] = arr === true ? [] : {};
+                        
+                            if (level === path.length -1) {
+                                if (Array.isArray(a[b])){
+                                    a[b].push(value)
+                                } else {
+                                    a[b] = value;
+                                
+                                }
+                                return value;
+                            }
+                    }
+                    return a[b];
+                }, obj);
+            },
+
+            evaluateExpression: function(exp, el) {
+                let expFunc = new Function('$refs',`let _result = ${exp}; return _result`)
+                let res = expFunc.call(el, this.$refs)
+                return res
+            } 
+
+            
+
+        }
+        Jelson.start()
+        console.log(Jelson.json)
+    </script>
+
+
+
+</body>
+</html>
