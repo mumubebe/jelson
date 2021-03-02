@@ -10,13 +10,17 @@
     
     <div>
         <div>
-            <h1 j-name="hello.kk[2].g" j-ref="intro" j-value="this.innerHTML"> Hello </h1>
-            <p j-name="hello.kk[3].g" j-value="this.innerHTML">2</p>
+            <h1 j-name="hello.kk[3].g" j-ref="intro" j-value="this.innerHTML"> Hello </h1>
+            <p j-name="hello.kk[3][b]" j-value="this.innerHTML + $refs.intro.innerHTML">2</p>
         </div>
     </div>
 
     <!-- Javascript -->
     <script>
+        var isArrayType = a => /^\d+$/.test(a);
+        var isEmptyArray = a => a === "";
+        var isUndefined = a => typeof a === "undefined"
+
         const Jelson = {
             json: {},
             $refs: {},
@@ -38,45 +42,44 @@
 
             buildJSON: function(el) {
                 const path = el.getAttribute('j-name')
-                                .split(/[.\[]/g)
-                                ;
+                                .split(/[.\[]/g);
 
                 const valueExpression = el.getAttribute('j-value');
                 
                 const value = this.evaluateExpression(valueExpression, el)
                 
-                this.setDeep(this.json, path, value, true)
+                this.setDeep(this.json, path)
             },
 
             getJsonProp: function(path) {
                 
             },
-
-            setDeep: function(obj, path, value) {
-                console.log(path)
-                path.reduce((a, b, level) => {
-                    const arr = b.includes("]") ? true : false
-                    let arrEmpty;
-                    if (arr) {
-                        arrEmpty = b.length === 1;
-                        b = b.replace(/^\[|]/g, "")
-                    }
-
-                    if (typeof a[b] === "undefined"){
-                            a[b] = arr === true ? [] : {};
+            setDeep: function(obj, path, setValue) {
+                path.reduce((accObj, val, currentIndex) => {
+                    val = val.replace(/^\[|]/g, "")
+                    if (isUndefined(accObj[val]) && !(currentIndex == path.length -1)) {
                         
-                            if (level === path.length -1) {
-                                if (Array.isArray(a[b])){
-                                    a[b].push(value)
-                                } else {
-                                    a[b] = value;
-                                
-                                }
-                                return value;
-                            }
+                        accObj[val] = isEmptyArray(val) || isArrayType(val) ? [] : {}
+                        if (isEmptyArray(val))
+                            return accObj[0];
+                        
+                        return accObj[val]
                     }
-                    return a[b];
-                }, obj);
+
+                    if (Array.isArray(accObj[val]) && !(currentIndex == path.length -1)) {
+                        if (isEmptyArray(val)) {}
+                            //return accObj.push();
+                    }
+
+                    if (currentIndex == path.length -1) {
+                        
+                        if (isEmptyArray(val))
+                            accObj.push(setValue)
+                        else
+                            accObj[val] = setValue 
+                    }
+                    return accObj[val];
+                }, obj)
             },
 
             evaluateExpression: function(exp, el) {
